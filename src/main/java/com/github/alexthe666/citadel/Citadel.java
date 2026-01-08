@@ -11,6 +11,7 @@ import com.github.alexthe666.citadel.server.block.CitadelLecternBlock;
 import com.github.alexthe666.citadel.server.block.CitadelLecternBlockEntity;
 import com.github.alexthe666.citadel.server.block.LecternBooks;
 import com.github.alexthe666.citadel.server.generation.SpawnProbabilityModifier;
+import com.github.alexthe666.citadel.server.generation.SurfaceRuleInitializer;
 import com.github.alexthe666.citadel.server.generation.VillageHouseManager;
 import com.github.alexthe666.citadel.server.message.*;
 import com.github.alexthe666.citadel.web.WebHelper;
@@ -140,6 +141,8 @@ public class Citadel {
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         RegistryAccess registryAccess = event.getServer().registryAccess();
         VillageHouseManager.addAllHouses(registryAccess);
+        // Initialize surface rules after biome sources are ready
+        SurfaceRuleInitializer.initializeOnServerStart(event.getServer());
     }
 
     private static <T> T unsafeRunForDist(Supplier<Supplier<T>> clientTarget, Supplier<Supplier<T>> serverTarget) {

@@ -7,10 +7,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SurfaceRulesManager {
-    private static final List<SurfaceRules.RuleSource> OVERWORLD_REGISTRY = new ArrayList();
-    private static final List<SurfaceRules.RuleSource> NETHER_REGISTRY = new ArrayList();
-    private static final List<SurfaceRules.RuleSource> END_REGISTRY = new ArrayList();
-    private static final List<SurfaceRules.RuleSource> CAVE_REGISTRY = new ArrayList();
+    private static final List<SurfaceRules.RuleSource> OVERWORLD_REGISTRY = new ArrayList<>();
+    private static final List<SurfaceRules.RuleSource> NETHER_REGISTRY = new ArrayList<>();
+    private static final List<SurfaceRules.RuleSource> END_REGISTRY = new ArrayList<>();
+    private static final List<SurfaceRules.RuleSource> CAVE_REGISTRY = new ArrayList<>();
+
+    /**
+     * Categories for surface rules to be classed under.
+     * Used to conditionally apply rules only during actual world generation.
+     */
+    public enum RuleCategory {
+        OVERWORLD, NETHER, END
+    }
 
     public SurfaceRulesManager() {
     }
@@ -56,5 +64,38 @@ public class SurfaceRulesManager {
 
     public static SurfaceRules.RuleSource mergeOverworldRules(SurfaceRules.RuleSource rulesIn) {
         return mergeRules(rulesIn, OVERWORLD_REGISTRY);
+    }
+
+    public static SurfaceRules.RuleSource mergeNetherRules(SurfaceRules.RuleSource rulesIn) {
+        return mergeRules(rulesIn, NETHER_REGISTRY);
+    }
+
+    public static SurfaceRules.RuleSource mergeEndRules(SurfaceRules.RuleSource rulesIn) {
+        return mergeRules(rulesIn, END_REGISTRY);
+    }
+
+    /**
+     * Merge rules based on the given category.
+     * @param category The rule category (dimension type)
+     * @param rulesIn The original surface rules
+     * @return Merged surface rules with registered rules prepended
+     */
+    public static SurfaceRules.RuleSource mergeRulesForCategory(RuleCategory category, SurfaceRules.RuleSource rulesIn) {
+        return switch (category) {
+            case OVERWORLD -> mergeOverworldRules(rulesIn);
+            case NETHER -> mergeNetherRules(rulesIn);
+            case END -> mergeEndRules(rulesIn);
+        };
+    }
+
+    /**
+     * Check if there are any registered rules for the given category.
+     */
+    public static boolean hasRulesForCategory(RuleCategory category) {
+        return switch (category) {
+            case OVERWORLD -> !OVERWORLD_REGISTRY.isEmpty();
+            case NETHER -> !NETHER_REGISTRY.isEmpty();
+            case END -> !END_REGISTRY.isEmpty();
+        };
     }
 }
