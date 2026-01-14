@@ -13,9 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Mixin to inject custom surface rules from SurfaceRulesManager into world generation.
- * Uses a conditional approach similar to TerraBlender - rules are only injected when
- * the ruleCategory has been set, which happens during server initialization AFTER
- * biome sources are fully initialized. This prevents breaking biome lookup.
+ * Always merges overworld rules unconditionally.
  */
 @Mixin(value = NoiseGeneratorSettings.class, priority = 500)
 public class NoiseGeneratorSettingsMixin implements IExtendedNoiseGeneratorSettings {
@@ -29,15 +27,17 @@ public class NoiseGeneratorSettingsMixin implements IExtendedNoiseGeneratorSetti
     @Unique
     private SurfaceRules.RuleSource citadel$mergedSurfaceRule = null;
 
+    @Unique
+    private boolean citadel$initialized = false;
+
     @Inject(method = "surfaceRule", at = @At("HEAD"), cancellable = true)
     private void citadel$surfaceRule(CallbackInfoReturnable<SurfaceRules.RuleSource> cir) {
-        // Only inject rules if the category has been set (after biome source init)
-        if (this.citadel$ruleCategory != null) {
-            // Cache the merged rules to avoid recomputing every call
-            if (this.citadel$mergedSurfaceRule == null) {
-                this.citadel$mergedSurfaceRule = SurfaceRulesManager.mergeRulesForCategory(
-                    this.citadel$ruleCategory, this.surfaceRule);
-            }
+        // Always merge overworld rules unconditionally
+        if (!this.citadel$initialized) {
+            this.citadel$mergedSurfaceRule = SurfaceRulesManager.mergeOverworldRules(this.surfaceRule);
+            this.citadel$initialized = true;
+        }
+        if (this.citadel$mergedSurfaceRule != null) {
             cir.setReturnValue(this.citadel$mergedSurfaceRule);
         }
     }
@@ -45,8 +45,8 @@ public class NoiseGeneratorSettingsMixin implements IExtendedNoiseGeneratorSetti
     @Override
     public void citadel$setRuleCategory(SurfaceRulesManager.RuleCategory ruleCategory) {
         this.citadel$ruleCategory = ruleCategory;
-        // Reset cached rules when category changes
         this.citadel$mergedSurfaceRule = null;
+        this.citadel$initialized = false;
     }
 
     @Override
