@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Mixin to inject custom surface rules from SurfaceRulesManager into world generation.
- * Always merges overworld rules unconditionally.
+ * Uses the rule category assigned by SurfaceRuleInitializer to avoid cross-dimension leakage.
  */
 @Mixin(value = NoiseGeneratorSettings.class, priority = 500)
 public class NoiseGeneratorSettingsMixin implements IExtendedNoiseGeneratorSettings {
@@ -32,9 +32,12 @@ public class NoiseGeneratorSettingsMixin implements IExtendedNoiseGeneratorSetti
 
     @Inject(method = "surfaceRule", at = @At("HEAD"), cancellable = true)
     private void citadel$surfaceRule(CallbackInfoReturnable<SurfaceRules.RuleSource> cir) {
-        // Always merge overworld rules unconditionally
         if (!this.citadel$initialized) {
-            this.citadel$mergedSurfaceRule = SurfaceRulesManager.mergeOverworldRules(this.surfaceRule);
+            if (this.citadel$ruleCategory != null && SurfaceRulesManager.hasRulesForCategory(this.citadel$ruleCategory)) {
+                this.citadel$mergedSurfaceRule = SurfaceRulesManager.mergeRulesForCategory(this.citadel$ruleCategory, this.surfaceRule);
+            } else {
+                this.citadel$mergedSurfaceRule = this.surfaceRule;
+            }
             this.citadel$initialized = true;
         }
         if (this.citadel$mergedSurfaceRule != null) {
