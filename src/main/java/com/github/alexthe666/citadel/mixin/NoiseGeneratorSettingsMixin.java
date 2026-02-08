@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Mixin to inject custom surface rules from SurfaceRulesManager into world generation.
  * Uses the rule category assigned by SurfaceRuleInitializer to avoid cross-dimension leakage.
+ * Merged order: original rules first, then Citadel rules (append), so other mods (WorldWeaver, Blueprint, etc.) take priority.
  */
 @Mixin(value = NoiseGeneratorSettings.class, priority = 500)
 public class NoiseGeneratorSettingsMixin implements IExtendedNoiseGeneratorSettings {
@@ -24,32 +25,18 @@ public class NoiseGeneratorSettingsMixin implements IExtendedNoiseGeneratorSetti
     @Unique
     private SurfaceRulesManager.RuleCategory citadel$ruleCategory = null;
 
-    @Unique
-    private SurfaceRules.RuleSource citadel$mergedSurfaceRule = null;
-
-    @Unique
-    private boolean citadel$initialized = false;
-
     @Inject(method = "surfaceRule", at = @At("HEAD"), cancellable = true)
     private void citadel$surfaceRule(CallbackInfoReturnable<SurfaceRules.RuleSource> cir) {
-        if (!this.citadel$initialized) {
-            if (this.citadel$ruleCategory != null && SurfaceRulesManager.hasRulesForCategory(this.citadel$ruleCategory)) {
-                this.citadel$mergedSurfaceRule = SurfaceRulesManager.mergeRulesForCategory(this.citadel$ruleCategory, this.surfaceRule);
-            } else {
-                this.citadel$mergedSurfaceRule = this.surfaceRule;
-            }
-            this.citadel$initialized = true;
-        }
-        if (this.citadel$mergedSurfaceRule != null) {
-            cir.setReturnValue(this.citadel$mergedSurfaceRule);
+        // Never cache: always use current field so other mods (WorldWeaver, Blueprint) that
+        // overwrite surfaceRule later are included in the merge (original first, then Citadel).
+        if (this.citadel$ruleCategory != null && SurfaceRulesManager.hasRulesForCategory(this.citadel$ruleCategory)) {
+            cir.setReturnValue(SurfaceRulesManager.mergeRulesForCategory(this.citadel$ruleCategory, this.surfaceRule));
         }
     }
 
     @Override
     public void citadel$setRuleCategory(SurfaceRulesManager.RuleCategory ruleCategory) {
         this.citadel$ruleCategory = ruleCategory;
-        this.citadel$mergedSurfaceRule = null;
-        this.citadel$initialized = false;
     }
 
     @Override

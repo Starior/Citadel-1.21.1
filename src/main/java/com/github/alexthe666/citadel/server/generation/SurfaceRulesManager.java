@@ -55,10 +55,16 @@ public class SurfaceRulesManager {
         CAVE_REGISTRY.add(rule);
     }
 
+    /**
+     * Merges Citadel surface rules with the existing (vanilla/other mods) rules.
+     * Original rules are placed FIRST so that WorldWeaver, Blueprint, and vanilla
+     * get priority; Citadel rules are appended and only apply where no prior rule matched
+     * (e.g. Alex's Caves biomes). This avoids Citadel overwriting other mods' surface rules.
+     */
     public static SurfaceRules.RuleSource mergeRules(SurfaceRules.RuleSource prev, List<SurfaceRules.RuleSource> toMerge) {
         ImmutableList.Builder<SurfaceRules.RuleSource> builder = ImmutableList.builder();
-        builder.addAll(toMerge);
         builder.add(prev);
+        builder.addAll(toMerge);
         return SurfaceRules.sequence(builder.build().toArray(SurfaceRules.RuleSource[]::new));
     }
 
@@ -77,8 +83,8 @@ public class SurfaceRulesManager {
     /**
      * Merge rules based on the given category.
      * @param category The rule category (dimension type)
-     * @param rulesIn The original surface rules
-     * @return Merged surface rules with registered rules prepended
+     * @param rulesIn The original surface rules (vanilla/other mods)
+     * @return Merged surface rules with original first, then Citadel rules appended
      */
     public static SurfaceRules.RuleSource mergeRulesForCategory(RuleCategory category, SurfaceRules.RuleSource rulesIn) {
         return switch (category) {
